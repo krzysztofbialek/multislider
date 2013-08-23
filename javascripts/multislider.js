@@ -14,12 +14,23 @@
   Sliders = function(){ 
     var sliders = []
     var self = this
+
     var percentages = []
+    var values = [33,33,0,33]
+    var max = 100
+    var value = 100
     self.init = function (sliders_count, container){
-      for(var i = 0; i < sliders_count; i++) { 
+      var odd = sliders_count % 2
+      if(!odd){
+        var max = 990
+      }
+      for(var i = 0; i < sliders_count; i++) {
         slider = $("<div class='slider slider_" + (i + 1) + "'></div>")
-        sliders[i] = slider.slider({min: 0, max: 100, step: sliders_count - 1, value: 0});
+        sliders[i] = slider.slider({min: 0, max: max, step: (sliders_count - 1) * 10, value: values[i] * 10});
         container.append(slider)
+        console.log(sliders[i].slider('option', 'step'))
+        console.log(sliders[i].slider('option', 'value'))
+        console.log(sliders[i].slider('option', 'max'))
       }
       bind_sliders(sliders)
       self.init_percentages(sliders_count);
@@ -50,19 +61,25 @@
 
     self.increase_sliders = function(active_slider, diff){
       var new_percentages = _.without([0,1,2,3], _.indexOf(sliders, active_slider));
-      var sticky_0_slider = _.filter(new_percentages, function(num){
+      var sticky_0_sliders = _.filter(new_percentages, function(num){
         return percentages[num] === 0;
-      }); 
-      console.log(sticky_0_slider) 
-      if(sticky_0_slider.length > 0){
+      });
+     
+      sticky_diff = Math.abs(sticky_0_sliders.length - new_percentages.length)
+      console.log(sticky_diff)
+      if(sticky_0_sliders.length > 0 && sticky_0_sliders.length != sliders.length - 1){
         $.each(new_percentages, function(i, item){
-          if(!$.inArray(item, sticky_0_slider)){
-            percentages[item] += diff;
+          if(!_.contains(sticky_0_sliders, item)){
+            if(sticky_diff === 0){
+              percentages[item] += diff ;
+            }else{
+              percentages[item] += diff / sticky_diff ;
+            }
           }
         });
       }else{
         $.each(new_percentages, function(i, item){
-          percentages[item] += i
+          percentages[item] += 10
         });
       };
     }
@@ -79,20 +96,27 @@
         return percentages[num] < 0;
       });
      
-      var percent_above_0 = _.without(new_percentages, percent_below_0[0]);
+      var percent_above_0 = _.difference(new_percentages, percent_below_0);
+      console.log('Above' + percent_above_0)
     
-      console.log(percent_below_0) 
-      if(percent_below_0.length === 1){
-        new_diff = Math.abs(percentages[percent_below_0]);
-        percentages[percent_below_0] = 0;
-        percentages[percent_above_0] -= new_diff;
+      if(percent_below_0.length > 0){
+        var new_diff = 0;
+        $.each(percent_below_0, function(i,item){
+          new_diff += Math.abs(percentages[item]);
+          console.log('Suma' + new_diff)
+          percentages[item] = 0;
+          //percentages[percent_above_0] -= new_diff;
+        });
+        $.each(percent_above_0, function(i, item){
+          old_percent = percentages[item]
+          percentages[item] -= new_diff / percent_above_0.length
+        });
       }
     }
     
     self.init_percentages = function(count){
       _(count).times(function(n) {
         percentages[n] = sliders[n].slider("option", "value");
-        console.log(percentages)
       });
     }
   
@@ -103,7 +127,7 @@
       $.each(sliders, function(index, item){
         item.slider('option', 'step', 1);
         item.slider('value', percentages[index]);
-        item.slider('option', 'step', sliders.length - 1);
+        item.slider('option', 'step', (sliders.length - 1) * 10);
         //item.slider('option', 'step', 2);
       }); 
     }

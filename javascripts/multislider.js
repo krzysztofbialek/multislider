@@ -35,6 +35,8 @@
 
     var percentages = []
     var max = 1000
+    var amount_fields = []
+
     self.init = function (options, container){
       var sliders_count = options.sliders_count 
       if (options.values){
@@ -46,26 +48,36 @@
       if(!odd && sliders_count != 2){
         max = 990
       }
-      console.log(values)
-      console.log(max)
-      console.log(sliders_count)
       for(var i = 0; i < sliders_count; i++) {
         slider = $("<div class='slider slider_" + (i + 1) + "'></div>")
         sliders[i] = slider.slider({min: 0, max: max, step: (sliders_count - 1) * 10, value: values[i] * 10});
+        amount_field = $('<input>', { value: '0', id: 'slide_amount_' + i, name: 'amount', class: 'slider-amount' } )
+        amount_fields.push(amount_field)
         container.append(slider)
-        console.log(sliders[i].slider('option', 'step'))
-        console.log(sliders[i].slider('option', 'value'))
-        console.log(sliders[i].slider('option', 'max'))
+        container.append(amount_field)
       }
-      bind_sliders(sliders)
+      bind_sliders(sliders, amount_fields)
       self.init_percentages(sliders_count);
+      self.updateAmount();
     }    
     //bind all different fields to appropriate methods
-    bind_sliders = function(sliders){
+    bind_sliders = function(sliders, amount_fields){
       $.each(sliders, function(i, slider){
        slider.on( "slide", function(event, ui) { self.update(ui, slider) } );
       })
     }
+
+    //update amount field with value based on slider percentage
+
+    self.updateAmount = function(){
+      $.each(amount_fields, function(index, item){
+        item.val((max * percentages[index] / 1000).toFixed(2));
+      });
+      var last_field = amount_fields[2]
+      var semi_total = parseFloat(amount_fields[0].value) + parseFloat(amount_fields[1].value)
+      last_field.value = parseFloat(max - semi_total).toFixed(2)
+    }
+
 
     //count change in percent on slider move and adjust other sliders
     self.update = function(ui, slider){
@@ -81,7 +93,6 @@
       }
 
       self.updateSlidersByPercent();
-      console.log(percentages)
     }
 
     self.increase_sliders = function(active_slider, diff){
@@ -95,10 +106,8 @@
         $.each(new_percentages, function(i, item){
           if(!_.contains(sticky_0_sliders, item)){
             if(sticky_diff === 0){
-              console.log('a')
               percentages[item] += diff ;
             }else{
-              console.log('b')
               percentages[item] += diff / sticky_diff ;
             }
           }
@@ -127,13 +136,11 @@
       });
      
       var percent_above_0 = _.difference(new_percentages, percent_below_0);
-      console.log('Above' + percent_above_0)
     
       if(percent_below_0.length > 0){
         var new_diff = 0;
         $.each(percent_below_0, function(i,item){
           new_diff += Math.abs(percentages[item]);
-          console.log('Suma' + new_diff)
           percentages[item] = 0;
           //percentages[percent_above_0] -= new_diff;
         });

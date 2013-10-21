@@ -1,3 +1,3 @@
 $(document).ready(function(){
-  $('.sliders').multislider({sliders_count: 4});
+  $('.sliders').multislider({sliders_count: 3});
 });

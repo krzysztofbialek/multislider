@@ -2,28 +2,53 @@
 
   $.fn.multislider = function(options) {
     var sliders_container = this;
-    var sliders_count = options.sliders_count 
     var total = 100;
     var sliders = new Sliders();
-    sliders.init(sliders_count, this)
+    sliders.init(options, this)
 
     return this;
     
   };
+  
+  prep_values = function(count){
+    switch(count){
+      case 2: 
+        return [50, 50];
+      case 3: 
+        return [33, 33, 34];
+      case 4: 
+        return [33, 33, 0, 33]
+    }
+  }
+
+  range = function(start, end) {
+    var foo = [];
+    for (var i = start; i <= end - 1; i++) {
+      foo.push(i);
+    }
+    return foo;
+  }
   
   Sliders = function(){ 
     var sliders = []
     var self = this
 
     var percentages = []
-    var values = [33,33,0,33]
-    var max = 100
-    var value = 100
-    self.init = function (sliders_count, container){
-      var odd = sliders_count % 2
-      if(!odd){
-        var max = 990
+    var max = 1000
+    self.init = function (options, container){
+      var sliders_count = options.sliders_count 
+      if (options.values){
+        var values = options.values
+      } else {
+       var values = prep_values(sliders_count)
       }
+      var odd = sliders_count % 2
+      if(!odd && sliders_count != 2){
+        max = 990
+      }
+      console.log(values)
+      console.log(max)
+      console.log(sliders_count)
       for(var i = 0; i < sliders_count; i++) {
         slider = $("<div class='slider slider_" + (i + 1) + "'></div>")
         sliders[i] = slider.slider({min: 0, max: max, step: (sliders_count - 1) * 10, value: values[i] * 10});
@@ -60,22 +85,27 @@
     }
 
     self.increase_sliders = function(active_slider, diff){
-      var new_percentages = _.without([0,1,2,3], _.indexOf(sliders, active_slider));
+      var new_percentages = _.without(range(0, sliders.length), _.indexOf(sliders, active_slider));
       var sticky_0_sliders = _.filter(new_percentages, function(num){
         return percentages[num] === 0;
       });
      
       sticky_diff = Math.abs(sticky_0_sliders.length - new_percentages.length)
-      console.log(sticky_diff)
       if(sticky_0_sliders.length > 0 && sticky_0_sliders.length != sliders.length - 1){
         $.each(new_percentages, function(i, item){
           if(!_.contains(sticky_0_sliders, item)){
             if(sticky_diff === 0){
+              console.log('a')
               percentages[item] += diff ;
             }else{
+              console.log('b')
               percentages[item] += diff / sticky_diff ;
             }
           }
+        });
+      }else if (sliders.length == 2) {
+        $.each(new_percentages, function(i, item){
+          percentages[item] += diff
         });
       }else{
         $.each(new_percentages, function(i, item){
@@ -86,7 +116,7 @@
 
     self.decrease_sliders = function(active_slider, diff){
       sliders_to_update = _.without(sliders, active_slider);
-      var new_percentages = _.without([0,1,2,3], _.indexOf(sliders, active_slider));
+      var new_percentages = _.without(range(0, sliders.length), _.indexOf(sliders, active_slider));
       
       $.each(new_percentages, function(i, item){
         percentages[item] -= diff / (sliders.length -1 );
@@ -119,6 +149,7 @@
         percentages[n] = sliders[n].slider("option", "value");
       });
     }
+
   
     //update UI after slider settings are changed
     //default step is 2 to make it possible in this place to change it to 1 and adjust both sliders.
